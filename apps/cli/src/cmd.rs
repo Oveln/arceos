@@ -1,4 +1,9 @@
-use std::io::{self};
+use axstd::sync::Mutex;
+use core::ops::Deref;
+use lazy_static::lazy_static;
+use std::io;
+
+use led_pure_driver::{registers::Registers, Led};
 
 #[cfg(all(not(feature = "axstd"), unix))]
 
@@ -18,7 +23,8 @@ const CMD_TABLE: &[(&str, CmdHandler)] = &[
     ("help", do_help),
     ("uname", do_uname),
     ("ldr", do_ldr),
-    ("str", do_str)
+    ("str", do_str),
+    ("ledtoggle", do_toggle),
 ];
 
 fn do_uname(_args: &str) {
@@ -83,7 +89,6 @@ fn do_ldr(args: &str) {
     }
 }
 
-
 // use crate::mem::phys_to_virt;
 // use core::ptr::{read_volatile, write_volatile};
 
@@ -131,7 +136,6 @@ fn do_str(args: &str) {
             str_one(addr, val).unwrap(); // 调用 str_one 函数并传递 addr 和 val
         }
     }
-
 }
 
 pub fn run_cmd(line: &[u8]) {
@@ -152,4 +156,35 @@ fn split_whitespace(str: &str) -> (&str, &str) {
     let str = str.trim();
     str.find(char::is_whitespace)
         .map_or((str, ""), |n| (&str[..n], str[n + 1..].trim()))
+}
+
+struct Regs {
+    regs: *mut Registers,
+}
+
+impl Deref for Regs {
+    type Target = Registers;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.regs }
+    }
+}
+
+impl Regs {
+    fn new() -> Self {
+        let gpio_base: u64 = 0xffff_0000_7e20_0000;
+        let ptr: *mut Registers = gpio_base as *mut Registers;
+        Regs { regs: ptr }
+    }
+}
+
+// const LED: Led<Regs> = Led::new(Regs::new());
+lazy_static! {
+    static ref LED: Mutex<Led<Regs>> = Mutex::new(Led::new(Regs::new()));
+}
+
+fn do_toggle(_args: &str) {
+    let mut led = LED.lock();
+    led.toggle();
+    println!("Led State: {}", led.is_on());
 }

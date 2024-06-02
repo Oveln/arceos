@@ -17,3 +17,5 @@ default = []
 # axstd = { path = "../../../ulib/axstd", features = ["alloc", "fs"], optional = true }
 
 axstd = { path = "../../ulib/axstd", optional = true }
+led_pure_driver = { path = "../../../led_pure_driver"}
+lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
