@@ -172,7 +172,7 @@ impl Deref for Regs {
 
 impl Regs {
     fn new() -> Self {
-        let gpio_base: u64 = 0xffff_0000_7e20_0000;
+        let gpio_base: u64 = 0xffff_0000_fe20_0000;
         let ptr: *mut Registers = gpio_base as *mut Registers;
         Regs { regs: ptr }
     }
@@ -185,6 +185,11 @@ lazy_static! {
 
 fn do_toggle(_args: &str) {
     let mut led = LED.lock();
+    let gpio_base: u64 = 0xffff_0000_fe20_0000;
+    let pin_addr = gpio_base + 0x34;
+    let pin_addr = pin_addr as *mut u32;
     led.toggle();
-    println!("Led State: {}", led.is_on());
+    unsafe {
+        println!("GPIO Pin: 0x{:X}", *pin_addr);
+    }
 }
